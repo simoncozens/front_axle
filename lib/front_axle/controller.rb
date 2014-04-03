@@ -1,8 +1,23 @@
 module FrontAxle
 module Controller
+  def self.included(base)
+    base.extend(ClassMethods)
+  end
+  
+  module ClassMethods
+    def will_search(meth_names, options = {})
+      if !meth_names.is_a? Array
+        meth_names = [ meth_names]
+      end
+      meth_names.each do |meth_name|
+        send(:define_method, meth_name.to_s) do
+          _a_searcher(options)
+        end
+      end
+    end
+  end
 
   def _a_searcher(options)
-    @geoFactory = RGeo::Geographic.spherical_factory
 
     # Tidy search parameters
     if params[:q].instance_of? String # Mashed by the pager
@@ -17,9 +32,10 @@ module Controller
     klass = model_class.constantize
     @display_columns = klass::DISPLAY_COLUMNS.dup
 
-    if options[:fiddle_display_columns]
-        @display_columns = options[:fiddle_display_columns].call(@display_columns)
+    if options[:prepare]
+        @display_columns = instance_exec(@display_columns,&options[:prepare])
     end
+    options[:result_processor] ||= Proc.new {|x| x }
 
     if klass.const_defined? "YOU_MAY_ALSO_DISPLAY"
       klass::YOU_MAY_ALSO_DISPLAY.each do |x|
@@ -40,21 +56,25 @@ module Controller
           page = 1
         end      
         @results = klass.search(params[:q], page, params[:sort])
-        @mapBounds = RGeo::Cartesian::BoundingBox.new @geoFactory
-        klass.search(params[:q], -1, params[:sort]).each(&options[:result_processor]) # Urgh. :(
+        klass.search(params[:q], -1, params[:sort]).each do |p|
+          instance_exec(p,&options[:result_processor])
+        end
         render :index, :template => "layouts/search"
       }
       format.json { 
         if params[:bounds]
           coords = params[:bounds].split (/,/)
           params[:q]["bounding_box"] = {
-            :top_left => [ coords[1], coords[0] ],
-            :bottom_right => [ coords[3], coords[2] ]
+            :top_left => [ coords[1].to_f, coords[0].to_f ],
+            :bottom_right => [ coords[3].to_f, coords[2].to_f ]
           }
         end
         @results = klass.search(params[:q], -1, params[:sort]).results.uniq {|r| r[:location] }
         # Dedupe the results
-        render :json => @results.map(&options[:map_result_processor]) 
+        @results = @results.map do |x|
+          instance_exec(x,&options[:map_result_processor])
+        end
+        render :json => @results
       }
       format.csv {
         params[:q][:per] = 1000
