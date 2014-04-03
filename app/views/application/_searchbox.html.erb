@@ -1,0 +1,6 @@
+
+ <h2>Keywords</h2>
+    <%= text_field_tag("q[query]", params[:q][:query], :validate => { :presence => true }) %>
+	<%= hidden_field_tag("q[did_search]", 1)%>
+
+

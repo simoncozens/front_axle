@@ -1,0 +1,64 @@
+<% content_for :left_sidebar do %>
+  <%= hidden_field_tag "sort", params["sort"] if params["sort"].present? and params[:did_search] %>
+  <%= render "saved_searches" %>
+  <%= render 'common/save_search' %>
+
+  <div class="searchwell well">
+  	<h1>Search </h1>
+  	<%= render "searchbuttons" %>
+    <%= render "searchbox" %>
+  	<%= render "faceting" if @results.count > 0%>
+  	<%= render "searchbuttons" if @results.count > 0%>
+	</div>
+<% end %>
+
+<%= render "sponsoricon" %>
+<div style="clear:both"></div>
+<%= render 'list_new_tabs' %>
+
+<%= content_tag(:pre, params[:q].to_json) if Rails.env.development? %>
+
+<div class="row-fluid">
+	<div style="clear:both"></div>
+	<%= h1_and_header("Search " +
+		(controller.real_controller_name == "awi_projects" ? "Tracked " : "") + # Horrible special case
+	 things.gsub(/\b\w/){ $&.upcase } ) %>
+	<%= render "searchblurb" %>
+	<% if @search && @search.permanent %>
+		<h2>Search "<%=@search.name%>"</h2>
+	<% end %>
+</div>
+
+<hr/>
+
+<%= render "adv_search" %>
+
+<% if @search.to_description.present? %> 
+  <h2> Searched for <%=things%> where <%= @search.to_description %> </h2>
+<% else %>
+  <h2> Searched for all <%= things %> </h2>
+<% end %>
+
+<% unless @nomap %>
+	<input type="hidden" id="active_tab" name="active_tab" value="<%= params[:active_tab] %>"/>
+	<ul class="nav nav-tabs">
+		<% if params[:active_tab] == "map" %> 
+			<li><a href="#list" id="showlist" data-toggle="tab">List</a></li>
+			<li class="active"><a href="#maptab"  class="in" id="showmap" data-toggle="tab">Map</a></li>
+		<% else %>
+			<li class="active"><a href="#list" id="showlist" class="in" data-toggle="tab">List</a></li>
+			<li><a href="#maptab" id="showmap" data-toggle="tab">Map</a></li>
+		<% end %>
+	</ul>
+<% end %>
+
+<div class="tab-content">
+	<div class="tab-pane <%= "active" if params[:active_tab] != "map" %>" id="list">
+		<%= render "results" %>
+	</div>
+	<% unless @nomap %>
+		<div class="tab-pane <%= "active" if params[:active_tab] == "map" %>" id="maptab">
+			<%= render "map" %>
+		</div>
+	<% end %>
+</div>

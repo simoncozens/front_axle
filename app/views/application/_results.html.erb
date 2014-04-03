@@ -1,0 +1,49 @@
+<% if cannot?(:read, model_class) %>
+<p> <% @results.total %> for all <% thing %> </p>
+    
+    <%= render 'result_teaser' %> 
+<h2> Subscribe to see these <%= things %>! </h2>
+
+
+<% else %>
+    <% if @results.count >0 and can? :manage, @results.first %>
+        <%= link_to('Download database dump', {:action => "build_report"}, :class => "btn") %>
+    <% end %>
+
+    <% if @results.count >0 and can? :edit, @results.first %>
+    <div style="float:right">
+        <%= link_to('<i class="icon-download"></i> XLS'.html_safe, {:format => "csv",:search_id => @search.id}) %>
+    </div>
+    <% end %>
+    <div class="resultcount"> <%= @results.total %> for all <%= things %> </div>
+        <%= page_navigation_links(@results, {:search_id => @search.id}) %>
+
+    <table id="searchResults" class="table">
+      <tr>
+        <%= search_headers(@display_columns, @search) %>
+        <% if can? :edit, model_class %>
+            <th></th>
+        <% end %>
+      </tr>
+
+    <% @results.each do |result| %>
+      <tr>
+        <%= search_results(result, @display_columns) %>
+        <%if can? :edit, result %>
+            <td><%= link_to 'Edit', url_for(:action => "edit", :id => result), :class => "btn" %>
+            <% if can? :destroy, result %>
+            <%= link_to 'Destroy', url_for(:action => "destroy", :id => result), :confirm => 'Are you sure?', :method => :delete, :class => "btn btn-danger" %>
+            <% else %>
+            <%= link_to 'Request deletion',
+            url_for(:action => "request_deletion", :id => result), :confirm => 'Are you sure?',
+            :class => "btn btn-mini btn-warning" %>
+            <% end %>
+            </td>
+        <% end %>
+      </tr>
+    <% end %>
+
+    </table>
+
+    <%= page_navigation_links(@results, {:search_id => @search.id}) %>
+<% end%>

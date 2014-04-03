@@ -1,0 +1,7 @@
+<div style="clear:both"></div>
+<div>
+	<%= submit_tag "Search", :name => nil, :class => "btn btn-danger" %>	
+	<% if @search && !@search.permanent %><a class="btn " data-toggle="modal" href="#save-search-dialog">Save search</a><% end %>
+	<%= link_to "Reset search", url_for(), { class: "btn"} %>
+</div>
+<div style="clear:both"></div>

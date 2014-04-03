@@ -1,0 +1,55 @@
+<div class="facets">
+
+<% model_class::STRING_FACETS.each do |x| %>
+<div class="facet">
+<a class="close" data-dismiss="alert" href="#">&times;</a>
+<h4> <%= x.to_s.humanize %> </h4>
+
+<%= string_facet_for(x.to_s, @results, params) %>
+
+<% # A horrible special case!
+if x.to_s === "state"
+%>
+<a href="#" style="float:right" id="stateflipper" class="btn btn-mini">All states...</a>
+<div style="clear:both"></div>
+<script>
+$("#stateflipper").click(function() {
+	var ul = $("#stateflipper").closest("div").find(".facet-content");
+	console.log(ul);
+	var checked = {}; ul.find(":checked").map(function(x,y) { checked[$(y).val()] =1 })
+	ul.empty();
+	var addState = function(key,val) {
+		var input = $('<input type="checkbox" name="q[state][]"/>'); 
+		input.attr("value", val.name);
+		if (checked[val]) { input.prop("checked",true)}
+		label = $("<div class=\"facet-line\">"+val.name+' </li>');
+		label.prepend(input);
+		ul.append(label);
+	};
+	$.getJSON("/misc/states", function (data){
+		$.each(data, addState);
+		ul.append("<h4>Canadian provinces and territories</h4>");
+		$.getJSON("/misc/states?q=CA", function (data){
+			$.each(data, addState);
+		});
+	});
+	return false;
+})
+</script>
+<% end # of horrible special case %>
+</div>
+<% end %>
+
+<% if model_class.const_defined? "SLIDEY_FACETS" %>
+	<% model_class::SLIDEY_FACETS.each do |x| %>
+	<div class="facet">
+	    <a class="close" data-dismiss="alert" href="#">&times;</a>
+	<h4> <%= x[:name].humanize.gsub(/Cip/i, "CIP") %> </h4>
+
+	<%= slidey_facet_for(x,params) %>
+	</div>
+
+	<% end %>
+<% end %>
+</div>
+<div style="margin-top:10px">&nbsp;</div>
