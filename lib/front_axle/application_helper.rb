@@ -10,9 +10,9 @@ module FrontAxle
     columns.each do |c|
       col = "".html_safe
       col += c[:html_header] || c[:header] || c[:column].humanize
-      unless !search or (c.key? :ordering and !c[:ordering]) or mailing 
+      unless !search or (c.key? :ordering and !c[:ordering]) or mailing
         c[:ordering] ||= c[:column]
-        if sortcol.match(c[:ordering]+"$") 
+        if sortcol.match(c[:ordering]+"$")
           # Then we are sorted asc so link to sort-desc if we can
           col += link_to "", { :sort => c[:ordering]+"_desc", :search_id => search.id }, :class => "caret-up"
         else
@@ -37,7 +37,7 @@ module FrontAxle
       col = "".html_safe
       if c[:code]
         col_data = c[:code].call(result,self)
-        
+
       elsif result.respond_to? c[:column]
         col_data = result[c[:column]]
       else
@@ -45,7 +45,7 @@ module FrontAxle
       end
       if col_data.class == Array
         col_data = content_tag("ul",col_data.map {|x| content_tag("li",x)}.join("").html_safe)
-      end      
+      end
       if c[:link_target]
         link_target = c[:link_target].call(result)
         link_target[:controller] ||= controller_name
@@ -62,7 +62,7 @@ module FrontAxle
           col_data = number_to_currency col_data
         end
         out += content_tag :td, col_data, :class => "money"
-      else 
+      else
         out += content_tag :td, col_data
       end
     end
@@ -71,7 +71,7 @@ module FrontAxle
 
   def string_facet_for(f_name, results, params)
     out = "".html_safe
-    param = params[:q][f_name.to_sym]    
+    param = params[:q][f_name.to_sym]
     results.facets[f_name]["terms"].each do |t|
       item = "".html_safe
       item += check_box_tag "q["+f_name+"][]", t["term"], param ? param.member?(t["term"]) : nil
@@ -84,36 +84,43 @@ module FrontAxle
 
   def slidey_facet_for(facet, params)
     data = @results.facets[facet[:name]]
+
+    if facet[:type] == 'time'
+      data['entries'].each do |entry|
+        entry['time'] = entry['key']
+      end
+    end
+
     if data["terms"]
       data = data["terms"].sort{|a,b| a["term"] <=> b["term"]}
     else
       data = data["entries"].sort{|a,b| a["key"] <=> b["key"]}
     end
-    if data.length == 0 
+    if data.length == 0
       return
     end
-    
+
     width = facet[:width] || "4em"
 
-    inputs = ["min","max"].map { |l| 
+    inputs = ["min","max"].map { |l|
       name = l+facet[:name]
       htmlclass = ""
       if !params[:q][name].present?
         htmlclass = "pseudo-disabled"
       end
-      content_tag(:span, content_tag(:span, 
-      (facet[:type] == "money" ? "$" : "").html_safe + 
+      content_tag(:span, content_tag(:span,
+      (facet[:type] == "money" ? "$" : "").html_safe +
         text_field_tag("q[#{name}]", params[:q][name], { :style => "width:"+width , :class => htmlclass } ) +
       (facet[:type] == "money" ? "m" : ""), :class => "controls"), :class => "control-group")
     }.join("-")
 
-    return (inputs + 
-      tag( :br ) + 
+    return (inputs +
+      tag( :br ) +
       content_tag(:div, nil, :id => facet[:name]+"-histogram", :class => "sparkline") +
       content_tag(:div, nil, :id => "slider-"+facet[:name]) +
       content_tag(:script, "$(function() { facetSlider(\"#{facet[:name]}\",#{data.to_json.html_safe},#{facet[:type]=="money" ? 0.1 : 1}, #{facet[:interval] || 0}) })".html_safe
         )
     ).html_safe
-  end  
+  end
 end
 end
