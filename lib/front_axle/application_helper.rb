@@ -75,7 +75,7 @@ module FrontAxle
     results.facets[f_name]["terms"].each do |t|
       item = "".html_safe
       item += check_box_tag "q["+f_name+"][]", t["term"], param ? param.member?(t["term"]) : nil
-      item += t["term"].present? ? t["term"].to_s.capitalize : "Not specified"
+      item += t["term"].present? ? t["term"].humanize.to_s.split.map(&:capitalize).join(' ') : "Not specified"
       item += " ("+t["count"].to_s+")"
       out += content_tag :div, item, :class => "facet-line"
     end
