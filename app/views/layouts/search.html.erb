@@ -12,18 +12,13 @@
 	</div>
 <% end %>
 
-<%= render "sponsoricon" %>
 <div style="clear:both"></div>
-<%= render 'list_new_tabs' %>
 
 <%= content_tag(:pre, params[:q].to_json) if Rails.env.development? %>
 
 <div class="row-fluid">
 	<div style="clear:both"></div>
-	<%= h1_and_header("Search " +
-		(controller.real_controller_name == "awi_projects" ? "Tracked " : "") + # Horrible special case
-	 things.gsub(/\b\w/){ $&.upcase } ) %>
-	<%= render "searchblurb" %>
+	<h1><%= "Search " + things.gsub(/\b\w/){ $&.upcase } %></h1>
 	<% if @search && @search.permanent %>
 		<h2>Search "<%=@search.name%>"</h2>
 	<% end %>
