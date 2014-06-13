@@ -115,5 +115,19 @@ module FrontAxle
         )
     ).html_safe
   end  
+  def things
+    controller.controller_name.humanize.downcase
+  end
+
+  def thing
+    things.singularize
+  end
+
+  def model_class
+    if controller_name == "static"
+      return nil
+    end
+    controller.controller_name.camelize.classify.constantize
+  end  
 end
 end
