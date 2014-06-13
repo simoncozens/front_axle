@@ -3,7 +3,7 @@ module Controller
   def self.included(base)
     base.extend(ClassMethods)
   end
-  
+
   module ClassMethods
     def will_search(meth_names, options = {})
       if !meth_names.is_a? Array
@@ -21,7 +21,7 @@ module Controller
 
     # Tidy search parameters
     if params[:q].instance_of? String # Mashed by the pager
-       params.delete :q 
+       params.delete :q
     end
     if params[:q]
         params[:q].delete_if {|k,v| !v.present? or (v.instance_of?(Array) and v.select {|f| f.present?}.count ==0)  }
@@ -50,18 +50,18 @@ module Controller
       @display_columns.shift
     end
     respond_to do |format|
-      format.html { 
+      format.html {
         page = params[:page].to_i
         if page < 1
           page = 1
-        end      
+        end
         @results = klass.search(params[:q], page, params[:sort])
         klass.search(params[:q], -1, params[:sort]).each do |p|
           instance_exec(p,&options[:result_processor])
         end
         render :index, :template => "layouts/search"
       }
-      format.json { 
+      format.json {
         if params[:bounds]
           coords = params[:bounds].split (/,/)
           params[:q]["bounding_box"] = {
@@ -78,7 +78,7 @@ module Controller
       }
       format.csv {
         params[:q][:per] = 1000
-        if User.current.role? "admin"
+        if current_user.role? "admin"
           params[:q][:per] = 2000
         end
 
@@ -90,7 +90,7 @@ module Controller
         if klass.const_defined? "YOU_MAY_ALSO_DISPLAY"
           @csv_columns.push(klass::YOU_MAY_ALSO_DISPLAY.dup).flatten!
         end
-        if User.current.role? "admin"
+        if current_user.role? "admin"
           @csv_columns.unshift({:column => "id"})
           @csv_columns.push(klass::ADMIN_COLUMNS.dup).flatten! if klass.const_defined? "ADMIN_COLUMNS"
         end
@@ -179,7 +179,7 @@ module Controller
       else # has_a
         params[:assoc][assoc.to_sym].keys.each do |k| # Each key requested from the associated record
           header.push assoc.humanize+ " " + k.humanize
-        end        
+        end
       end
     end
 
@@ -188,7 +188,7 @@ module Controller
       results.each_with_index  do |result, i|
         if i==0
           y << header.to_csv
-        end        
+        end
         line = []
         tire_cols.keys.each { |x| line.push(result[x]) }
 
@@ -207,7 +207,7 @@ module Controller
           elsif params[:assoc][:max][assoc]
             (0 .. (params[:assoc][:max][assoc].to_i - 1)).each do |i|
               params[:assoc][assoc.to_sym].keys.each do |k|
-                line.push( related[i] ? related[i].send(k) : nil)  
+                line.push( related[i] ? related[i].send(k) : nil)
               end
             end
           else

@@ -17,11 +17,11 @@ module Model
 		Tire.configure { logger "elasticsearch-rails.log" }
 		tire.search do |s|
 			qqq = lambda do |q|
-				q.boolean do 
+				q.boolean do
 					if params["query"].present?
 						if analyzer.present?
 							must { match :_all, params["query"], {:operator => "AND", :analyzer => analyzer} }
-						else 
+						else
 							must { match :_all, params["query"], :operator => "AND" }
 						end
 					else
@@ -40,11 +40,11 @@ module Model
 							must { range f[:name], :from => min, :to => max }
 								end
 						end
-					end	
+					end
 					if klass.const_defined? "DATE_FACETS"
 						klass::DATE_FACETS.each do |f|
 							if params["min"+f.to_s].present? and params["max"+f.to_s].present?
-							must { range f.to_s, :from => params["min"+f.to_s], 
+							must { range f.to_s, :from => params["min"+f.to_s],
 									:to => params["max"+f.to_s] }
 								end
 						end
@@ -59,10 +59,10 @@ module Model
 	  			query_block.call(q)
 		  	end
 			end
-			
+
 			if params["bounding_box"].present?
 				s.query do |q|
-					q.filtered do 
+					q.filtered do
 						filter :geo_bounding_box, :location => params["bounding_box"]
 						query(&qqq)
 					end
@@ -84,7 +84,7 @@ module Model
 
 			if klass.const_defined? "STRING_FACETS"
 				klass::STRING_FACETS.each do |t|
-					s.facet t.to_s do terms t end
+					s.facet t.to_s do terms t.to_s end
 				end
 			end
 
@@ -102,20 +102,20 @@ module Model
 
 			search_size = params[:per] || DEFAULT_SIZE
 
-			if order.present?        
+			if order.present?
 				desc = order.match(/_desc$/)
 				key = order.gsub(/_desc$/, "")
-				s.sort { by((klass.mapping.key?(("sort_"+key).to_sym) ? "sort_"+key : key), desc ? "desc" : ()) 
+				s.sort { by((klass.mapping.key?(("sort_"+key).to_sym) ? "sort_"+key : key), desc ? "desc" : ())
 					by "_score"
 				}
 			end
 			if page > 0
 				s.from (page -1) * search_size
-				s.size search_size            
+				s.size search_size
 			else
 				s.size MAX_SIZE
 			end
-		end        
+		end
 	end
 end
 end
