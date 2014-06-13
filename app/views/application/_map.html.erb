@@ -1,0 +1,89 @@
+    <div id="map" style="width:680px; height:500px"></div>
+    <%= render "mapkey" %>
+    <script>
+    var map = L.map('map').fitWorld();
+      var ggl = new L.Google("ROADMAP");    map.addLayer(ggl);
+  var markers = [];
+  redrawPoints = function() {
+    var m;
+    var br = map.getBounds().getSouthEast();
+    var tl = map.getBounds().getNorthWest();
+      $.ajax({ url: "/<%= controller.controller_name %>.json",
+       data: { 
+           search_id: <%= @search.id%>,
+           bounds: [tl.lat,tl.lng,br.lat,br.lng].join(",")
+       }, dataType: "json",
+       success: function(data) {
+        while (m = markers.pop()) { map.removeLayer(m);}        
+        data.forEach( function (x) {
+            var drop = L.icon({ 
+              iconUrl: "/icons/<%= controller.controller_name %>/"+x.iconPath+".svg",
+              iconSize: [30,40]
+            })    
+            markers.push(L.marker( x.location.reverse(), {icon:drop}).addTo(map).bindPopup("<a href=\"/<%= controller.controller_name%>/"+x.id+"\">"+x.name+"</a>"));
+        })
+
+    }})
+  };
+  map.on("moveend", redrawPoints);
+  $("#locateme").on("click", function() {
+    $("#q_location").addClass("throbber");
+    map.locate({ setView: true, maxZoom: 12 });
+  });
+  map.on("locationerror", function(location) {
+    $("#q_location").removeClass("throbber");
+  });
+  map.on("locationfound", function(location) {
+    ll = location.latlng;
+    $("#q_location_lat").val(ll.lat);
+    $("#q_location_lng").val(ll.lng);
+    $.ajax({ url: "/misc/reverse_geocode",
+      data: { q: ll.lat+","+ll.lng },
+      success: function(address) {
+        $("#q_location").removeClass("throbber");
+        if (address.success) {
+          $("#q_location").val(address.full_address);
+          $("#location_wrapper").addClass("success");
+        }
+      }
+    })
+  })
+
+  $("#q_location").on("change", function() {
+    if (!$("#q_location").val()) return;
+    $.ajax({ url: "/misc/geocode",
+      data: {q: $("#q_location").val() },
+      success: function(data) {
+        if (data.success) {
+          $("#q_location_lat").val(data.lat);
+          $("#q_location_lng").val(data.lng);          
+          $("#location_wrapper").addClass("success");
+        } else {
+          $("#location_wrapper").removeClass("success");
+          $("#location_wrapper").addClass("error");
+        }
+      }
+    })
+  });
+
+var showmap = function() { 
+  $("#active_tab").val("map");
+  map.invalidateSize(false);
+  <% if @mapBounds && @mapBounds.min_point %>
+  map.fitBounds([
+            [ <%= @mapBounds.min_point.latitude %>, <%= @mapBounds.min_point.longitude %> ],
+            [ <%= @mapBounds.max_point.latitude %>, <%= @mapBounds.max_point.longitude %> ]
+        ]);
+  <% else %>
+  map.fitBounds([[60, -154], [30, -69]]);  
+  <% end %>
+  //redrawPoints();
+}
+<% if params[:active_tab] == "map" %>
+$( showmap );
+<% end %>
+$("body").on('shown','#showmap', showmap);
+$("body").on('shown','#showlist', function() { $("#active_tab").val("list");});
+
+    </script>
+<div style="padding-bottom:20px">&nbsp;</div>

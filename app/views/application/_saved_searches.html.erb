@@ -1,0 +1,46 @@
+<% if current_user %>
+  <% @saved_searches = current_user.searches.where(:permanent => 1) %>
+  <% @favourites = current_user.favourites %>
+  <% if @saved_searches.count > 0 or @favourites.count > 0 %>
+    <div class="well saved">
+
+    	<% if @favourites.count > 0 %>
+        <h3>Following</h3>
+        <% @favourites.limit(5).each do |fav| %>
+        	<div><%= link_to(fav.entity, fav.entity) %></div>
+        <% end %>
+
+      <% if @favourites.count > 5 %>
+        <%= link_to "See all...", favourites_path %>
+      <% end %>
+    	<% end %>
+
+      <% if @saved_searches.count > 0 and @favourites.count > 0 %>
+        <hr class="gradient">
+      <% end %>
+
+      <% if @saved_searches.count > 0 %>
+        <h3>Saved Searches</h3>
+        <% [:Project, :WaterUtility, :Cip].each do |target| 
+	ss = @saved_searches.where(:target_model => target).limit(5)
+	if ss.count > 0
+%>
+        <h4>
+          <%= target.to_s.underscore.humanize.gsub("Cip","CIP").gsub("Water utility", "Utility") %></h4>
+        <ul>
+          <% ss.each do |s| %>
+            <li>
+              <%= link_to s.name, url_for(:controller => s.target_model.underscore.pluralize, :action => :search, :search_id => s.id) %>
+            </li>
+          <% end%>
+        </ul>
+      <%end 
+end
+%>
+      <% if @saved_searches.count > 5 %>
+        <%= link_to "See all...", searches_path %>
+      <% end %>
+      <% end %>
+    </div>
+    <% end%>
+  <% end %>
