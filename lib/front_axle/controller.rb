@@ -26,6 +26,8 @@ module Controller
     if params[:q]
         params[:q].delete_if {|k,v| !v.present? or (v.instance_of?(Array) and v.select {|f| f.present?}.count ==0)  }
         params[:q].each {|k,v| v.uniq! if v.instance_of?(Array) }
+    else
+        params[:q] = {}
     end
 
     @search = Search.build(model_class, params)
