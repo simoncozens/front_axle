@@ -96,7 +96,8 @@ module Model
 
 			if klass.const_defined? "DATE_FACETS"
 				klass::DATE_FACETS.each do |t|
-					s.facet t.to_s do date t, {:interval => "month"} end
+					# TODO: we currently don't handle non-numeric intervals in the front end.
+					s.facet t[:name].to_s do date t[:name], { interval: t.fetch(:interval) { 'month' } } end
 				end
 			end
 
