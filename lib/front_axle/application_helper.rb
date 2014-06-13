@@ -85,12 +85,6 @@ module FrontAxle
   def slidey_facet_for(facet, params)
     data = @results.facets[facet[:name]]
 
-    if facet[:type] == 'time'
-      data['entries'].each do |entry|
-        entry['time'] = entry['key']
-      end
-    end
-
     if data["terms"]
       data = data["terms"].sort{|a,b| a["term"] <=> b["term"]}
     else
@@ -114,14 +108,54 @@ module FrontAxle
       (facet[:type] == "money" ? "m" : ""), :class => "controls"), :class => "control-group")
     }.join("-")
 
+    js_string = "$(function() { facetSlider(\"#{facet[:name]}\",#{data.to_json.html_safe},#{facet[:type]=="money" ? 0.1 : 1}, #{facet[:interval] || 0}) })"
+
     return (inputs +
       tag( :br ) +
       content_tag(:div, nil, :id => facet[:name]+"-histogram", :class => "sparkline") +
       content_tag(:div, nil, :id => "slider-"+facet[:name]) +
-      content_tag(:script, "$(function() { facetSlider(\"#{facet[:name]}\",#{data.to_json.html_safe},#{facet[:type]=="money" ? 0.1 : 1}, #{facet[:interval] || 0}) })".html_safe
+      content_tag(:script, js_string.html_safe
         )
     ).html_safe
-  end  
+  end
+
+  def date_facet_for(facet, params)
+    data = @results.facets[facet[:name]]
+
+    return if data.length == 0
+
+    if data["terms"]
+      data = data["terms"].sort{|a,b| a["term"] <=> b["term"]}
+    else
+      data = data["entries"].sort{|a,b| a["time"] <=> b["time"]}
+    end
+
+
+
+    width = facet[:width] || "7em"
+
+    inputs = ["min","max"].map { |l|
+      name = l+facet[:name]
+      htmlclass = ""
+      if !params[:q][name].present?
+        htmlclass = "pseudo-disabled"
+      end
+      content_tag(:span, content_tag(:span,
+        text_field_tag("q[#{name}]", params[:q][name], { :style => "width:"+width , :class => htmlclass } ),
+        :class => "controls"), :class => "control-group")
+    }.join("-")
+
+    js_string = "$(function() { facetSlider(\"#{facet[:name]}\",#{data.to_json.html_safe}, 1, #{facet[:interval] || 0}) })"
+
+    return (inputs +
+      tag( :br ) +
+      content_tag(:div, nil, :id => facet[:name]+"-histogram", :class => "sparkline") +
+      content_tag(:div, nil, :id => "slider-"+facet[:name]) +
+      content_tag(:script, js_string.html_safe
+        )
+    ).html_safe
+  end
+
   def things
     controller.controller_name.humanize.downcase
   end
@@ -135,6 +169,6 @@ module FrontAxle
       return nil
     end
     controller.controller_name.camelize.classify.constantize
-  end  
+  end
 end
 end
