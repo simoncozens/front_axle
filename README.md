@@ -10,66 +10,74 @@ models.
 
 * Add this to your model:
 
-    class Project < ActiveRecord::Base
-      include FrontAxle::Model
+```ruby
+class Project < ActiveRecord::Base
+  include FrontAxle::Model
+```
 
 * Add this to your controller:
 
-    class ProjectsController < ApplicationController
-      include FrontAxle::Controller
-      will_search([:index, :search])
+```ruby
+class ProjectsController < ApplicationController
+  include FrontAxle::Controller
+  will_search([:index, :search])
+```
 
 * Add a `search` route to `routes.rb`:
 
-    resources :projects do
-      collection do
-        match 'search' => 'projects#search', :via => [:get, :post], :as => :search
-      end
-    end
+```ruby
+resources :projects do
+  collection do
+    match 'search' => 'projects#search', :via => [:get, :post], :as => :search
+  end
+end
+```
 
 * Ensure that your `application_helper` defines `current_user`.
 
 * Create a `Search` model and table in your database to save searches.
-
-    rails g model Search parameters:string permanent:boolean name:string \
-      target_model:string user:references
-
+```
+rails g model Search parameters:string permanent:boolean name:string \
+  target_model:string user:references
+```
 * Add some methods to your Search model
+```ruby
+def self.build(model, params)
+  if params[:search_id]
+    s = Search.find(params[:search_id])
+    params[:q] = JSON.parse(s.parameters)
+  else
+    s = Search.where(:target_model => model, :parameters => params[:q].to_json, :user_id => User.current).first_or_create
+  end
+  if params[:searchname].present?
+    s.permanent = 1
+    s.name = params[:searchname]
+  end
+  s.update_attribute(:updated_at, Time.now)
+  s.save
+  return s
+end
 
-    def self.build(model, params)
-      if params[:search_id]
-        s = Search.find(params[:search_id])
-        params[:q] = JSON.parse(s.parameters)
-      else
-        s = Search.where(:target_model => model, :parameters => params[:q].to_json, :user_id => User.current).first_or_create
-      end
-      if params[:searchname].present?
-        s.permanent = 1
-        s.name = params[:searchname]
-      end
-      s.update_attribute(:updated_at, Time.now)
-      s.save
-      return s
-    end
-
-    def to_description
-      params = JSON.parse(parameters)
-      # Return a user-facing description of the search here
-    end
-
+def to_description
+  params = JSON.parse(parameters)
+  # Return a user-facing description of the search here
+end
+```
 * Load each of your searchable models into the elasticsearch index: (see the tire documentation)
 
-    Project.create_elasticsearch_index
-    Project.import
+```ruby
+Project.create_elasticsearch_index
+Project.import
+```
 
 * In your model, declare what columns you want to be in your results display:
-
-    DISPLAY_COLUMNS = [
-      { :column => "relevance", :ordering => "_score" },
-      { :column => "id" },
-      { :column => "name" }
-    ]
-
+```ruby
+DISPLAY_COLUMNS = [
+  { :column => "relevance", :ordering => "_score" },
+  { :column => "id" },
+  { :column => "name" }
+]
+```
 * That should be it.
 
 ## Customizing
@@ -85,16 +93,18 @@ types are available. You will certainly want to set up a mapping for your
 index, and you will probably also want to set up a  `to_indexed_json` method
 in your model to ensure that the data is handled the way you want.
 
-    settings do
-      mapping do
-        indexes :id,         :index    => :not_analyzed
-        indexes :name,       :analyzer => 'synsnowball', :boost => 100
-        indexes :capacity,   :type => :float
-        indexes :country,    :index => :not_analyzed
-        indexes :start_date, :type => :date
-        indexes :location,   :type => :geo_point
-      end
-    end
+```ruby
+settings do
+  mapping do
+    indexes :id,         :index    => :not_analyzed
+    indexes :name,       :analyzer => 'synsnowball', :boost => 100
+    indexes :capacity,   :type => :float
+    indexes :country,    :index => :not_analyzed
+    indexes :start_date, :type => :date
+    indexes :location,   :type => :geo_point
+  end
+end
+```
 
 ### Search columns
 
@@ -122,8 +132,10 @@ result of the Proc will be displayed instead.
 
 For example:
 
-    { :column => "price", 
-      :code => lambda {|result,helper| helper.number_to_currency(result.price)} }
+```ruby
+{ :column => "price", 
+  :code => lambda {|result,helper| helper.number_to_currency(result.price)} }
+```
 
 * `:link` and `:link_target`
 
@@ -142,21 +154,21 @@ ElasticSearch and no database hits - that way your search is nice and speedy.
 If you want to optimize your search to avoid database hits, you would instead
 do this. First, declare your mapping to index both the author's name and their
 database ID:
-
-    mapping do
-      ...
-      indexes :author,    :as => "author.name"
-      indexes :author_id, :index => :not_analyzed, :as => "author.id"
-    end
-
+```ruby
+mapping do
+  ...
+  indexes :author,    :as => "author.name"
+  indexes :author_id, :index => :not_analyzed, :as => "author.id"
+end
+```
 Now the association lookup is done once, at indexing time. 
 
 Next declare your author column like this:
-
-    { :column => "author",
-      :link_target => lambda {|result| { id: result.author_id, controller: "authors"} }
-    }
-
+```ruby
+{ :column => "author",
+  :link_target => lambda {|result| { id: result.author_id, controller: "authors"} }
+}
+```
 The result of `:link_target` will be fed to `url_for` to construct the link.
 
 ### Facets
