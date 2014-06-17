@@ -1,0 +1,9 @@
+LineLength:
+  Max: 120
+
+AllCops:
+  Excludes:
+    - tmp/
+    - db/
+    - public/
+    - log/
