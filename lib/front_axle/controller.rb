@@ -1,5 +1,7 @@
 module FrontAxle
   module Controller
+    require 'csv'
+
     def self.included(base)
       base.extend(ClassMethods)
     end
@@ -117,9 +119,9 @@ module FrontAxle
       response.headers['Content-Transfer-Encoding'] = 'binary'
       response.headers['Last-Modified'] = Time.now.to_s
 
-      self.response_body = Enumerator.new do |y|
+      self.response_body = CSV.generate do |y|
         results.each_with_index do |result, i|
-          y << header.to_csv if i == 0
+          y << header if i == 0
 
           line = []
           cols.each do |c|
@@ -134,12 +136,13 @@ module FrontAxle
 
             line.push col_data
           end
-          y << line.to_csv
+          y << line
           GC.start if i % 500 == 0
         end
       end
     end
 
+    # TODO: not called anywhere here or in IRIS
     def build_report
       klass = model_class.constantize
       @cols = klass.columns.map { |c| c.name.to_sym }
@@ -151,6 +154,7 @@ module FrontAxle
       @tire_saved = klass.tire.mapping.keys
     end
 
+    # TODO: not called anywhere here or in IRIS
     # I'm annoyed that there's so much repetition between this method and the _export_as_csv method,
     # but this is a more complex version of the standard CSV download. I wonder if there's a good way
     # to redefine that in terms of this one?

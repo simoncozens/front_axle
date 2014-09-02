@@ -73,14 +73,21 @@ module FrontAxle
     def string_facet_for(f_name, results, params)
       out = ''.html_safe
       param = params[:q][f_name.to_sym]
+      @options = []
+      @picked = []
       results.facets[f_name]['terms'].each do |t|
-        item = ''.html_safe
-        item += check_box_tag "q[#{f_name}][]", t['term'], param ? param.member?(t['term']) : nil
-        item += t['term'].present? ? t['term'].humanize : 'Not specified'
-        item += " (#{t['count']})"
-        out += content_tag :div, item, class: 'facet-line'
+        item = []
+        item << (t['term'].present? ? t['term'].humanize : 'Not specified')
+        item[0] += " (#{t['count']})"
+        item << t['term']
+        @picked << t['term'] if param.try :member?, t['term']
+
+        # out += content_tag :div, item, class: 'facet-line'
+        @options << item
       end
-      content_tag :div, out, class: 'facet-content'
+      # return content_tag :div, out, class: 'facet-content'
+
+      render partial: 'application/string_facet', locals: { f_name: f_name, results: results, params: params }
     end
 
     def slidey_facet_for(facet, params)
@@ -132,6 +139,7 @@ module FrontAxle
       ).html_safe
     end
 
+    # TODO: not actually doing anything to constrain search results
     def date_facet_for(facet, params)
       data = @results.facets[facet[:name]]
 

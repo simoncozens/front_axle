@@ -83,8 +83,10 @@ module FrontAxle
           facet_block.call(s) if facet_block
 
           if klass.const_defined? 'STRING_FACETS'
-            klass::STRING_FACETS.each do |t|
-              s.facet(t.to_s) { terms t.to_s }
+            klass::STRING_FACETS.each do |facet|
+              t = Array(facet)[0]
+              size = Array(facet)[1] || 1000
+              s.facet(t.to_s) { terms t.to_s, size: size }
             end
           end
 
