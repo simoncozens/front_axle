@@ -1,0 +1,47 @@
+<h1>Report Builder</h1>
+<style>
+.triple { list-style: none;}
+.triple li  { width:33.33%; float:left;}
+</style>
+
+<%= form_tag(:action => "csv_report") do  %>
+<ul class="triple">
+	<% mycols = {}
+	(@tire_saved & @cols + (@tire_saved - @cols).select {|x| !x.match /^sort/ }).each do |c| 
+		mycols[c.to_s] = {:type => "tire"}
+	end
+	(@cols - @tire_saved).each do |c|
+		mycols[c.to_s] = {:type => "activerecord"}
+	end
+	mycols.keys.sort.each do |c| %>
+		<li>  <%= check_box_tag(mycols[c][:type]+"["+c+"]") %>  <span> <%= c.humanize %> </span></li>
+	<% end %>
+</ul>
+<div style="clear:both"></div>
+
+<% @assocs.each do |assoc| %>
+	<h3> <%= assoc.klass.name.underscore.humanize %> <%= check_box_tag("assoc[include]["+assoc.name.to_s+"]",  1,false, {"data-toggle"=>"collapse", "data-target"=> "#"+assoc.name.to_s }) %></h3>
+	<div class="collapse" id="<%= assoc.name%>">
+		<% if assoc.klass.columns.count > 2 # If it's a complex class %>
+			<% if assoc.macro == :has_many or assoc.macro == :has_and_belongs_to_many %>
+				<p>Include up to <%= number_field_tag("assoc[max]["+assoc.name.to_s+"]", 1, :style => "width:2em", :min => 0, :max => 3) %> instances of this association. </p>
+			<% end %>
+			<ul class="triple">
+				<% assoc.klass.columns.map {|c| c.name.to_s }.sort.each do |c| %>
+				<li>  <%= check_box_tag("assoc["+assoc.name.to_s+"]["+c+"]") %>  <span> <%= c.humanize %> </span></li>
+				<% end %>
+			</ul>
+		<% else # But if it's just "id" and an other column, use that column. %>
+			<% if assoc.macro == :has_many %>
+				<%= hidden_field_tag("assoc[max]["+assoc.name.to_s+"]", "join") %>
+			<% end %>		
+			<%= hidden_field_tag("assoc["+assoc.name.to_s+"]["+assoc.klass.columns.last.name.to_s+"]", 1) %>
+		<% end %>
+		<div style="clear:both"></div>
+	</div>
+<% end %>
+
+	<%= submit_tag("Download", {:class => "btn btn-primary"}) %>
+
+
+<% end %>
