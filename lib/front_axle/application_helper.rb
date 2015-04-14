@@ -49,7 +49,7 @@ module FrontAxle
           url = url_for(controller: link_target[:controller], action: 'show', id: link_target[:id], only_path: false)
           link = link_to(col_data, url)
 
-          out += content_tag :td, col_data ? link : ''
+          out += content_tag :td, (col_data ? link : ''), :class => c[:column]
         elsif c[:link]
           link_target = col_data
           unless link_target.respond_to?(:persisted?)
@@ -57,14 +57,14 @@ module FrontAxle
             link_target = result.load
           end
           link = link_to(col_data, polymorphic_url(link_target, only_path: false))
-          out += content_tag :td, col_data ? link : ''
+          out += content_tag :td, (col_data ? link : ''), :class => c[:column]
         elsif c[:money]
           if col_data && !(col_data.is_a?(String) && col_data.match(/^\$/))
             col_data = number_to_currency col_data
           end
           out += content_tag :td, col_data, class: 'money'
         else
-          out += content_tag :td, col_data
+          out += content_tag :td, col_data, :class => c[:column]
         end
       end
       out.html_safe
